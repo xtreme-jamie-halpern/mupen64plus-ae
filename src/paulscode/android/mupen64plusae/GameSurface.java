@@ -156,10 +156,26 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback
             }
             // @formatter:on            
             
+            // Log some vendor info
+            Log.i( "GameSurface", "  Vendor    : " + egl.eglQueryString( display, EGL10.EGL_VENDOR ) );
+            Log.i( "GameSurface", "  Version   : " + egl.eglQueryString( display, EGL10.EGL_VERSION ) );
+            Log.i( "GameSurface", "  Extensions: " + egl.eglQueryString( display, EGL10.EGL_EXTENSIONS ) );
+            
             // Get an EGL frame buffer configuration that is compatible with the display and specification
-            final EGLConfig[] configs = new EGLConfig[1];
-            final int[] num_config = new int[1];
-            if( !egl.eglChooseConfig( display, configSpec, configs, 1, num_config ) || num_config[0] == 0 )
+            final EGLConfig[] configs = new EGLConfig[50];
+            final int[] numConfig = new int[1];
+            final boolean success = egl.eglChooseConfig( display, configSpec, configs, 50, numConfig );
+            for( int i = 0; i < numConfig[0]; i++ )
+            {
+                Log.i( "GameSurface", "Configuration:" );
+                Log.i( "GameSurface", "   Red  : " + configAttribString( egl, display, configs[i], EGL10.EGL_RED_SIZE ) );
+                Log.i( "GameSurface", "   Green: " + configAttribString( egl, display, configs[i], EGL10.EGL_GREEN_SIZE ) );
+                Log.i( "GameSurface", "   Blue : " + configAttribString( egl, display, configs[i], EGL10.EGL_BLUE_SIZE ) );
+                Log.i( "GameSurface", "   Alpha: " + configAttribString( egl, display, configs[i], EGL10.EGL_ALPHA_SIZE ) );
+                Log.i( "GameSurface", "   Depth: " + configAttribString( egl, display, configs[i], EGL10.EGL_DEPTH_SIZE ) );
+                Log.i( "GameSurface", "   Stenc: " + configAttribString( egl, display, configs[i], EGL10.EGL_STENCIL_SIZE ) );
+            }
+            if( !success || numConfig[0] == 0 )
             {
                 Log.e( "GameSurface", "Couldn't find compatible EGL frame buffer configuration" );
                 return false;
@@ -206,6 +222,13 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback
             }
             return false;
         }
+    }
+    
+    public static String configAttribString( EGL10 egl, EGLDisplay display, EGLConfig config, int attribute )
+    {
+        int[] value = new int[1];
+        egl.eglGetConfigAttrib( display, config, attribute, value );
+        return Integer.toString( value[0] );
     }
     
     public void flipBuffers()
