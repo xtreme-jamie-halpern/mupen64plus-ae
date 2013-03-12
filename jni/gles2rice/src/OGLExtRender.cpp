@@ -16,6 +16,17 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "OGLPlatform.h"
+
+#if SDL_VIDEO_OPENGL
+#include "OGLExtensions.h"
+
+#elif SDL_VIDEO_OPENGL_ES2
+#define pglActiveTexture    glActiveTexture
+#define GL_TEXTURE0_ARB     GL_TEXTURE0
+
+#endif
+
 #include "OGLDebug.h"
 #include "OGLExtRender.h"
 #include "OGLTexture.h"
@@ -44,7 +55,7 @@ void COGLExtRender::BindTexture(GLuint texture, int unitno)
         {
             if( m_curBoundTex[unitno] != texture )
             {
-                glActiveTexture(GL_TEXTURE0+unitno);
+                pglActiveTexture(GL_TEXTURE0_ARB+unitno);
                 OPENGL_CHECK_ERRORS;
                 glBindTexture(GL_TEXTURE_2D,texture);
                 OPENGL_CHECK_ERRORS;
@@ -62,7 +73,7 @@ void COGLExtRender::DisBindTexture(GLuint texture, int unitno)
 {
     if( m_bEnableMultiTexture )
     {
-        glActiveTexture(GL_TEXTURE0+unitno);
+        pglActiveTexture(GL_TEXTURE0_ARB+unitno);
         OPENGL_CHECK_ERRORS;
         glBindTexture(GL_TEXTURE_2D, 0);    //Not to bind any texture
         OPENGL_CHECK_ERRORS;
@@ -70,6 +81,47 @@ void COGLExtRender::DisBindTexture(GLuint texture, int unitno)
     else
         OGLRender::DisBindTexture(texture, unitno);
 }
+
+void COGLExtRender::TexCoord2f(float u, float v)
+{
+#if SDL_VIDEO_OPENGL
+    if( m_bEnableMultiTexture )
+    {
+        for( int i=0; i<8; i++ )
+        {
+            if( m_textureUnitMap[i] >= 0 )
+            {
+                pglMultiTexCoord2f(GL_TEXTURE0_ARB+i, u, v);
+            }
+        }
+    }
+    else
+    {
+        OGLRender::TexCoord2f(u,v);
+    }
+#endif
+}
+
+void COGLExtRender::TexCoord(TLITVERTEX &vtxInfo)
+{
+#if SDL_VIDEO_OPENGL
+    if( m_bEnableMultiTexture )
+    {
+        for( int i=0; i<8; i++ )
+        {
+            if( m_textureUnitMap[i] >= 0 )
+            {
+                pglMultiTexCoord2fv(GL_TEXTURE0_ARB+i, &(vtxInfo.tcord[m_textureUnitMap[i]].u));
+            }
+        }
+    }
+    else
+    {
+        OGLRender::TexCoord(vtxInfo);
+    }
+#endif
+}
+
 
 void COGLExtRender::SetTexWrapS(int unitno,GLuint flag)
 {
@@ -128,7 +180,7 @@ void COGLExtRender::SetTextureUFlag(TextureUVFlag dwFlag, uint32 dwTile)
     {
         if( m_textureUnitMap[textureNo] == tex )
         {
-            glActiveTexture(GL_TEXTURE0+textureNo);
+            pglActiveTexture(GL_TEXTURE0_ARB+textureNo);
             OPENGL_CHECK_ERRORS;
             COGLTexture* pTexture = g_textures[(gRSP.curTile+tex)&7].m_pCOGLTexture;
             if( pTexture ) 
@@ -187,7 +239,7 @@ void COGLExtRender::EnableTexUnit(int unitno, BOOL flag)
     if( m_texUnitEnabled[unitno] != flag )
     {
         m_texUnitEnabled[unitno] = flag;
-        glActiveTexture(GL_TEXTURE0+unitno);
+        pglActiveTexture(GL_TEXTURE0_ARB+unitno);
         OPENGL_CHECK_ERRORS;
         if( flag == TRUE )
             glEnable(GL_TEXTURE_2D);
@@ -248,7 +300,7 @@ void COGLExtRender::ApplyTextureFilter()
             if( mtex[i] != m_curBoundTex[i] )
             {
                 mtex[i] = m_curBoundTex[i];
-                glActiveTexture(GL_TEXTURE0+i);
+                pglActiveTexture(GL_TEXTURE0_ARB+i);
                 OPENGL_CHECK_ERRORS;
                 minflag[i] = m_dwMinFilter;
                 magflag[i] = m_dwMagFilter;
@@ -262,7 +314,7 @@ void COGLExtRender::ApplyTextureFilter()
                 if( minflag[i] != (unsigned int)m_dwMinFilter )
                 {
                     minflag[i] = m_dwMinFilter;
-                    glActiveTexture(GL_TEXTURE0+i);
+                    pglActiveTexture(GL_TEXTURE0_ARB+i);
                     OPENGL_CHECK_ERRORS;
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, iMinFilter);
                     OPENGL_CHECK_ERRORS;
@@ -270,7 +322,7 @@ void COGLExtRender::ApplyTextureFilter()
                 if( magflag[i] != (unsigned int)m_dwMagFilter )
                 {
                     magflag[i] = m_dwMagFilter;
-                    glActiveTexture(GL_TEXTURE0+i);
+                    pglActiveTexture(GL_TEXTURE0_ARB+i);
                     OPENGL_CHECK_ERRORS;
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, iMagFilter);
                     OPENGL_CHECK_ERRORS;
