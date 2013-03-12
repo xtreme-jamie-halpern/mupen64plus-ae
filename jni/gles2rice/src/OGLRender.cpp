@@ -25,6 +25,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "OGLCombiner.h"        //For AlphaTestOverride in COGLBlender
 #include "OGLFragmentShaders.h"
 
+#define glTexCoord2f(u, v)      // No-op: Unsupported in GLES2
+#define pglActiveTexture        glActiveTexture
+
+#define GL_CLAMP                GL_CLAMP_TO_EDGE
+#define GL_MIRRORED_REPEAT_ARB  GL_MIRRORED_REPEAT
+#define GL_TEXTURE0_ARB         GL_TEXTURE0
+#define GL_TEXTURE1_ARB         GL_TEXTURE1
+
 #endif
 
 #include "OGLDebug.h"
@@ -56,8 +64,6 @@ extern "C" int Android_JNI_GetHardwareType();
 #define HARDWARE_TYPE_TEGRA         5
 ///
 
-//#include "liblinux/BMGLibPNG.h"
-
 // FIXME: Use OGL internal L/T and matrix stack
 // FIXME: Use OGL lookupAt function
 // FIXME: Use OGL DisplayList
@@ -65,8 +71,8 @@ extern "C" int Android_JNI_GetHardwareType();
 UVFlagMap OGLXUVFlagMaps[] =
 {
     {TEXTURE_UV_FLAG_WRAP, GL_REPEAT},
-    {TEXTURE_UV_FLAG_MIRROR, GL_MIRRORED_REPEAT},
-    {TEXTURE_UV_FLAG_CLAMP, GL_CLAMP_TO_EDGE},
+    {TEXTURE_UV_FLAG_MIRROR, GL_MIRRORED_REPEAT_ARB},
+    {TEXTURE_UV_FLAG_CLAMP, GL_CLAMP},
 };
 
 GLuint disabledTextureID;
@@ -132,7 +138,7 @@ void OGLRender::Initialize(void)
     }
     else if( pcontext->IsExtensionSupported("ARB_texture_mirrored_repeat") )
     {
-        //OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT;
+        //OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT_ARB;
     }
     else
     {
@@ -147,7 +153,7 @@ void OGLRender::Initialize(void)
 //    else
 //    {
 //        m_bSupportClampToEdge = false;
-//        OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP_TO_EDGE;
+//        OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP;
 //    }
     hardwareType = Android_JNI_GetHardwareType();
 }
@@ -723,22 +729,22 @@ bool OGLRender::RenderFlushTris()
         glVertexPointer( 4, GL_FLOAT, sizeof(float)*5, &(g_vtxProjected5Clipped[0][0]) );
         glEnableClientState( GL_VERTEX_ARRAY );
 
-        pglClientActiveTextureARB( GL_TEXTURE0 );
+        pglClientActiveTextureARB( GL_TEXTURE0_ARB );
         glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_clippedVtxBuffer[0].tcord[0].u) );
         glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-        pglClientActiveTextureARB( GL_TEXTURE1 );
+        pglClientActiveTextureARB( GL_TEXTURE1_ARB );
         glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_clippedVtxBuffer[0].tcord[1].u) );
         glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
         glDrawElements( GL_TRIANGLES, gRSP.numVertices, GL_UNSIGNED_INT, g_vtxIndex );
 
         // Reset the array
-        pglClientActiveTextureARB( GL_TEXTURE0 );
+        pglClientActiveTextureARB( GL_TEXTURE0_ARB );
         glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[0].u) );
         glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-        pglClientActiveTextureARB( GL_TEXTURE1 );
+        pglClientActiveTextureARB( GL_TEXTURE1_ARB );
         glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[1].u) );
         glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
@@ -1022,20 +1028,30 @@ void OGLRender::EnableTexUnit(int unitno, BOOL flag)
         m_texUnitEnabled[0] = flag;
         if(flag)
         {
-            glActiveTexture(GL_TEXTURE0 + unitno);
+            pglActiveTexture(GL_TEXTURE0_ARB + unitno);
             OPENGL_CHECK_ERRORS;
             glBindTexture(GL_TEXTURE_2D,m_curBoundTex[unitno]);
             OPENGL_CHECK_ERRORS;
         }
         else
         {
-            glActiveTexture(GL_TEXTURE0 + unitno);
+            pglActiveTexture(GL_TEXTURE0_ARB + unitno);
             OPENGL_CHECK_ERRORS;
             glEnable(GL_BLEND); //Need blend for transparent disabled texture
             glBindTexture(GL_TEXTURE_2D,disabledTextureID);
             OPENGL_CHECK_ERRORS;
         }
     }
+}
+
+void OGLRender::TexCoord2f(float u, float v)
+{
+    glTexCoord2f(u, v);
+}
+
+void OGLRender::TexCoord(TLITVERTEX &vtxInfo)
+{
+    glTexCoord2f(vtxInfo.tcord[0].u, vtxInfo.tcord[0].v);
 }
 
 void OGLRender::UpdateScissor()
@@ -1160,13 +1176,13 @@ void OGLRender::SetFogColor(uint32 r, uint32 g, uint32 b, uint32 a)
 
 void OGLRender::DisableMultiTexture()
 {
-    glActiveTexture(GL_TEXTURE1);
+    pglActiveTexture(GL_TEXTURE1_ARB);
     OPENGL_CHECK_ERRORS;
     EnableTexUnit(1,FALSE);
-    glActiveTexture(GL_TEXTURE0);
+    pglActiveTexture(GL_TEXTURE0_ARB);
     OPENGL_CHECK_ERRORS;
     EnableTexUnit(0,FALSE);
-    glActiveTexture(GL_TEXTURE0);
+    pglActiveTexture(GL_TEXTURE0_ARB);
     OPENGL_CHECK_ERRORS;
     EnableTexUnit(0,TRUE);
 }
