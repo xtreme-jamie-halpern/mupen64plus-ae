@@ -104,7 +104,6 @@ void OGLRender::DrawSpriteR_Render()    // With Rotation
     glDrawArrays(GL_TRIANGLES,0,6);
     //OPENGL_CHECK_ERRORS;
 
-
     //Restore old pointers
     glVertexAttribPointer(VS_COLOR, 4, GL_UNSIGNED_BYTE,GL_TRUE, sizeof(uint8)*4, &(g_oglVtxColors[0][0]) );
     glVertexAttribPointer(VS_POSITION,4,GL_FLOAT,GL_FALSE,sizeof(float)*5,&(g_vtxProjected5[0][0]));

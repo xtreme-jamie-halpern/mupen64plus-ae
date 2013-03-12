@@ -16,11 +16,18 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "osal_opengl.h"
+
+#if SDL_VIDEO_OPENGL
+#include "OGLExtensions.h"
+#elif SDL_VIDEO_OPENGL_ES2
+#include "OGLTexture.h"
+#endif
+
 #include "OGLDebug.h"
 #include "OGLFragmentShaders.h"
 #include "OGLRender.h"
 #include "OGLGraphicsContext.h"
-#include "OGLTexture.h"
 
 #define ALPHA_TEST "    if(gl_FragColor.a < AlphaRef) discard;                        \n"
 //#define ALPHA_TEST
