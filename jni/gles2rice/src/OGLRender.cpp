@@ -365,8 +365,6 @@ void OGLRender::SetAlphaRef(uint32 dwAlpha)
 void OGLRender::ForceAlphaRef(uint32 dwAlpha)
 {
     m_dwAlpha = dwAlpha;
-    //float ref = dwAlpha/255.0f;
-    //glAlphaFunc(GL_GEQUAL, ref);
     OPENGL_CHECK_ERRORS;
 }
 
@@ -710,7 +708,7 @@ bool OGLRender::RenderFlushTris()
         }
     }
 
-    ApplyZBias(m_dwZBias);                    // set the bias factors
+    ApplyZBias(m_dwZBias);  // set the bias factors
 
     glViewportWrapper(windowSetting.vpLeftW + windowSetting.xpos, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.ypos, windowSetting.vpWidthW, windowSetting.vpHeightW, false);
     OPENGL_CHECK_ERRORS;
@@ -976,13 +974,12 @@ void OGLRender::RenderReset()
 
 void OGLRender::SetAlphaTestEnable(BOOL bAlphaTestEnable)
 {
-//#ifdef DEBUGGER
-//    if( bAlphaTestEnable && debuggerEnableAlphaTest )
-//#else
-
-//#endif
     COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
+#ifdef DEBUGGER
+    if( bAlphaTestEnable && debuggerEnableAlphaTest )
+#else
     if( bAlphaTestEnable )
+#endif
     {
         frag->m_AlphaRef = m_dwAlpha / 255.0f;
     }
@@ -1132,7 +1129,7 @@ void OGLRender::TurnFogOnOff(bool flag)
 
 void OGLRender::SetFogEnable(bool bEnable)
 {
-//    DEBUGGER_IF_DUMP( (gRSP.bFogEnabled != (bEnable==TRUE) && logFog ), TRACE1("Set Fog %s", bEnable? "enable":"disable"));
+    DEBUGGER_IF_DUMP( (gRSP.bFogEnabled != (bEnable==TRUE) && logFog ), TRACE1("Set Fog %s", bEnable? "enable":"disable"));
 
     gRSP.bFogEnabled = bEnable&&(options.fogMethod == 1);
     
@@ -1208,8 +1205,6 @@ void OGLRender::glViewportWrapper(GLint x, GLint y, GLsizei width, GLsizei heigh
         m_width=width;
         m_height=height;
         mflag=flag;
-//        if( flag )  glOrthof(0, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight, 0, -1, 1);
-        OPENGL_CHECK_ERRORS;
         glViewport(x,y,width,height);
         OPENGL_CHECK_ERRORS;
     }

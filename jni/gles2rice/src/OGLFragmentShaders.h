@@ -32,11 +32,11 @@ typedef struct {
     uint32  dwMux1;
 
     bool    fogIsUsed;
+    GLuint  programID;
+
     bool    alphaTest;
     GLuint  fragmentShaderID;
     GLuint  vertexShaderID;
-    GLuint  programID;
-
     GLint  PrimColorLocation;
     GLint  EnvColorLocation;
     GLint  PrimFracLocation;
