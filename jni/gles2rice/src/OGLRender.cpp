@@ -17,13 +17,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "OGLPlatform.h"
+
+#if SDL_VIDEO_OPENGL
+#include "OGLExtensions.h"
+
+#elif SDL_VIDEO_OPENGL_ES2
+#include "OGLCombiner.h"        //For AlphaTestOverride in COGLBlender
+#include "OGLFragmentShaders.h"
+
+#endif
+
 #include "OGLDebug.h"
 #include "OGLRender.h"
 #include "OGLGraphicsContext.h"
 #include "OGLTexture.h"
 #include "TextureManager.h"
-#include "OGLCombiner.h" //For AlphaTestOverride in COGLBlender
-#include "OGLFragmentShaders.h"
 
 #include <iostream>
 #include <ostream>
@@ -50,9 +58,9 @@ extern "C" int Android_JNI_GetHardwareType();
 
 //#include "liblinux/BMGLibPNG.h"
 
-// Fix me, use OGL internal L/T and matrix stack
-// Fix me, use OGL lookupAt function
-// Fix me, use OGL DisplayList
+// FIXME: Use OGL internal L/T and matrix stack
+// FIXME: Use OGL lookupAt function
+// FIXME: Use OGL DisplayList
 
 UVFlagMap OGLXUVFlagMaps[] =
 {
@@ -526,8 +534,31 @@ bool OGLRender::RenderTexRect()
     OPENGL_CHECK_ERRORS;
 
     float depth = -(g_texRectTVtx[3].z*2-1);
-    //depth = 0.0001f;
 
+#if SDL_VIDEO_OPENGL
+
+    glBegin(GL_TRIANGLE_FAN);
+
+    glColor4f(g_texRectTVtx[3].r, g_texRectTVtx[3].g, g_texRectTVtx[3].b, g_texRectTVtx[3].a);
+    TexCoord(g_texRectTVtx[3]);
+    glVertex3f(g_texRectTVtx[3].x, g_texRectTVtx[3].y, depth);
+    
+    glColor4f(g_texRectTVtx[2].r, g_texRectTVtx[2].g, g_texRectTVtx[2].b, g_texRectTVtx[2].a);
+    TexCoord(g_texRectTVtx[2]);
+    glVertex3f(g_texRectTVtx[2].x, g_texRectTVtx[2].y, depth);
+
+    glColor4f(g_texRectTVtx[1].r, g_texRectTVtx[1].g, g_texRectTVtx[1].b, g_texRectTVtx[1].a);
+    TexCoord(g_texRectTVtx[1]);
+    glVertex3f(g_texRectTVtx[1].x, g_texRectTVtx[1].y, depth);
+
+    glColor4f(g_texRectTVtx[0].r, g_texRectTVtx[0].g, g_texRectTVtx[0].b, g_texRectTVtx[0].a);
+    TexCoord(g_texRectTVtx[0]);
+    glVertex3f(g_texRectTVtx[0].x, g_texRectTVtx[0].y, depth);
+
+    glEnd();
+    OPENGL_CHECK_ERRORS;
+
+#elif SDL_VIDEO_OPENGL_ES2
 
     GLfloat colour[] = {
             g_texRectTVtx[3].r, g_texRectTVtx[3].g, g_texRectTVtx[3].b, g_texRectTVtx[3].a,
@@ -564,6 +595,7 @@ bool OGLRender::RenderTexRect()
     glVertexAttribPointer(VS_POSITION,4,GL_FLOAT,GL_FALSE,sizeof(float)*5,&(g_vtxProjected5[0][0]));
     glVertexAttribPointer(VS_TEXCOORD0,2,GL_FLOAT,GL_FALSE, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[0].u));
 
+#endif
 
     if( cullface ) glEnable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
@@ -583,6 +615,19 @@ bool OGLRender::RenderFillRect(uint32 dwColor, float depth)
     GLboolean cullface = glIsEnabled(GL_CULL_FACE);
     glDisable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
+
+#if SDL_VIDEO_OPENGL
+
+    glBegin(GL_TRIANGLE_FAN);
+    glColor4f(r,g,b,a);
+    glVertex4f(m_fillRectVtx[0].x, m_fillRectVtx[1].y, depth, 1);
+    glVertex4f(m_fillRectVtx[1].x, m_fillRectVtx[1].y, depth, 1);
+    glVertex4f(m_fillRectVtx[1].x, m_fillRectVtx[0].y, depth, 1);
+    glVertex4f(m_fillRectVtx[0].x, m_fillRectVtx[0].y, depth, 1);
+    glEnd();
+    OPENGL_CHECK_ERRORS;
+
+#elif SDL_VIDEO_OPENGL_ES2
 
     GLfloat colour[] = {
             r,g,b,a,
@@ -610,6 +655,8 @@ bool OGLRender::RenderFillRect(uint32 dwColor, float depth)
     glVertexAttribPointer(VS_COLOR, 4, GL_UNSIGNED_BYTE,GL_TRUE, sizeof(uint8)*4, &(g_oglVtxColors[0][0]) );
     glVertexAttribPointer(VS_POSITION,4,GL_FLOAT,GL_FALSE,sizeof(float)*5,&(g_vtxProjected5[0][0]));
     glEnableVertexAttribArray(VS_TEXCOORD0);
+
+#endif
 
     if( cullface ) glEnable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
@@ -735,6 +782,36 @@ void OGLRender::DrawSimple2DTexture(float x0, float y0, float x1, float y1, floa
     float r = ((g_texRectTVtx[0].dcDiffuse>>16)&0xFF)/255.0f;
     float g = ((g_texRectTVtx[0].dcDiffuse>>8)&0xFF)/255.0f;
     float b = (g_texRectTVtx[0].dcDiffuse&0xFF)/255.0f;
+
+#if SDL_VIDEO_OPENGL
+
+    glBegin(GL_TRIANGLES);
+
+    glColor4f(r,g,b,a);
+
+    OGLRender::TexCoord(g_texRectTVtx[0]);
+    glVertex3f(g_texRectTVtx[0].x, g_texRectTVtx[0].y, -g_texRectTVtx[0].z);
+
+    OGLRender::TexCoord(g_texRectTVtx[1]);
+    glVertex3f(g_texRectTVtx[1].x, g_texRectTVtx[1].y, -g_texRectTVtx[1].z);
+
+    OGLRender::TexCoord(g_texRectTVtx[2]);
+    glVertex3f(g_texRectTVtx[2].x, g_texRectTVtx[2].y, -g_texRectTVtx[2].z);
+
+    OGLRender::TexCoord(g_texRectTVtx[0]);
+    glVertex3f(g_texRectTVtx[0].x, g_texRectTVtx[0].y, -g_texRectTVtx[0].z);
+
+    OGLRender::TexCoord(g_texRectTVtx[2]);
+    glVertex3f(g_texRectTVtx[2].x, g_texRectTVtx[2].y, -g_texRectTVtx[2].z);
+
+    OGLRender::TexCoord(g_texRectTVtx[3]);
+    glVertex3f(g_texRectTVtx[3].x, g_texRectTVtx[3].y, -g_texRectTVtx[3].z);
+    
+    glEnd();
+    OPENGL_CHECK_ERRORS;
+
+#elif SDL_VIDEO_OPENGL_ES2
+
     GLfloat colour[] = {
             r,g,b,a,
             r,g,b,a,
@@ -778,6 +855,8 @@ void OGLRender::DrawSimple2DTexture(float x0, float y0, float x1, float y1, floa
     glVertexAttribPointer(VS_POSITION,4,GL_FLOAT,GL_FALSE,sizeof(float)*5,&(g_vtxProjected5[0][0]));
     glVertexAttribPointer(VS_TEXCOORD0,2,GL_FLOAT,GL_FALSE, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[0].u));
 
+#endif
+
     if( cullface ) glEnable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
 }
@@ -790,11 +869,26 @@ void OGLRender::DrawSimpleRect(int nX0, int nY0, int nX1, int nY1, uint32 dwColo
     glDisable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
 
-
     float a = (dwColor>>24)/255.0f;
     float r = ((dwColor>>16)&0xFF)/255.0f;
     float g = ((dwColor>>8)&0xFF)/255.0f;
     float b = (dwColor&0xFF)/255.0f;
+
+#if SDL_VIDEO_OPENGL
+
+    glBegin(GL_TRIANGLE_FAN);
+
+    glColor4f(r,g,b,a);
+    glVertex3f(m_simpleRectVtx[1].x, m_simpleRectVtx[0].y, -depth);
+    glVertex3f(m_simpleRectVtx[1].x, m_simpleRectVtx[1].y, -depth);
+    glVertex3f(m_simpleRectVtx[0].x, m_simpleRectVtx[1].y, -depth);
+    glVertex3f(m_simpleRectVtx[0].x, m_simpleRectVtx[0].y, -depth);
+    
+    glEnd();
+    OPENGL_CHECK_ERRORS;
+
+#elif SDL_VIDEO_OPENGL_ES2
+
     GLfloat colour[] = {
             r,g,b,a,
             r,g,b,a,
@@ -820,6 +914,8 @@ void OGLRender::DrawSimpleRect(int nX0, int nY0, int nX1, int nY1, uint32 dwColo
     glVertexAttribPointer(VS_COLOR, 4, GL_UNSIGNED_BYTE,GL_TRUE, sizeof(uint8)*4, &(g_oglVtxColors[0][0]) );
     glVertexAttribPointer(VS_POSITION,4,GL_FLOAT,GL_FALSE,sizeof(float)*5,&(g_vtxProjected5[0][0]));
     glEnableVertexAttribArray(VS_TEXCOORD0);
+
+#endif
 
     if( cullface ) glEnable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
