@@ -25,14 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "OGLCombiner.h"        //For AlphaTestOverride in COGLBlender
 #include "OGLFragmentShaders.h"
 
-#define glTexCoord2f(u, v)      // No-op: Unsupported in GLES2
-#define pglActiveTexture        glActiveTexture
-
-#define GL_CLAMP                GL_CLAMP_TO_EDGE
-#define GL_MIRRORED_REPEAT_ARB  GL_MIRRORED_REPEAT
-#define GL_TEXTURE0_ARB         GL_TEXTURE0
-#define GL_TEXTURE1_ARB         GL_TEXTURE1
-
 #endif
 
 #include "OGLDebug.h"

@@ -20,11 +20,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #if SDL_VIDEO_OPENGL
 #include "OGLExtensions.h"
-
-#elif SDL_VIDEO_OPENGL_ES2
-#define pglActiveTexture    glActiveTexture
-#define GL_TEXTURE0_ARB     GL_TEXTURE0
-
 #endif
 
 #include "OGLDebug.h"

@@ -28,9 +28,21 @@
 #include <SDL_opengl.h>
 #define GLSL_VERSION "120"
 
+
+
 #elif SDL_VIDEO_OPENGL_ES2
 #include <SDL_opengles2.h>
 #define GLSL_VERSION "100"
+
+// Function substitutes
+#define glTexCoord2f(u, v)      // No-op: Unsupported in GLES2
+#define pglActiveTexture        glActiveTexture
+
+// Preprocessor symbols
+#define GL_CLAMP                GL_CLAMP_TO_EDGE
+#define GL_MIRRORED_REPEAT_ARB  GL_MIRRORED_REPEAT
+#define GL_TEXTURE0_ARB         GL_TEXTURE0
+#define GL_TEXTURE1_ARB         GL_TEXTURE1
 
 #endif // SDL_VIDEO_OPENGL*
 
