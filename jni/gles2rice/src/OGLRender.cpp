@@ -20,11 +20,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #if SDL_VIDEO_OPENGL
 #include "OGLExtensions.h"
-
 #elif SDL_VIDEO_OPENGL_ES2
-#include "OGLCombiner.h"        //For AlphaTestOverride in COGLBlender
 #include "OGLFragmentShaders.h"
-
 #endif
 
 #include "OGLDebug.h"
@@ -33,18 +30,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "OGLTexture.h"
 #include "TextureManager.h"
 
-#include <iostream>
-#include <ostream>
-#include <fstream>
-
-// JNI linkage:
+// begin mupen64plus-ae specific hack
 #include <jni.h>
-//// paulscode, added for logcat output:
 #include <android/log.h>
 #define printf(...) __android_log_print(ANDROID_LOG_VERBOSE, "gles2rice (OGLRenderer)", __VA_ARGS__)
-////
 
-//// paulscode, added for different configurations based on hardware
+// paulscode, added for different configurations based on hardware
 // (part of the missing shadows and stars bug fix)
 extern "C" int Android_JNI_GetHardwareType();
 // Must match the static final int's in AppData.java!
@@ -54,7 +45,9 @@ extern "C" int Android_JNI_GetHardwareType();
 #define HARDWARE_TYPE_QUALCOMM      3
 #define HARDWARE_TYPE_IMAP          4
 #define HARDWARE_TYPE_TEGRA         5
-///
+
+static int hardwareType = HARDWARE_TYPE_UNKNOWN;
+// end mupen64plus-ae specific hack
 
 // FIXME: Use OGL internal L/T and matrix stack
 // FIXME: Use OGL lookupAt function
@@ -81,6 +74,11 @@ OGLRender::OGLRender()
         m_curBoundTex[i]=0;
         m_texUnitEnabled[i]=FALSE;
     }
+
+#if SDL_VIDEO_OPENGL
+    m_bEnableMultiTexture = false;
+
+#elif SDL_VIDEO_OPENGL_ES2
     m_bEnableMultiTexture = true;
 
     //Create a texture as replacement for glEnable/Disable(GL_TEXTURE_2D)
@@ -95,6 +93,7 @@ OGLRender::OGLRender()
     OPENGL_CHECK_ERRORS;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white.dcDiffuse);
     OPENGL_CHECK_ERRORS;
+#endif
 }
 
 OGLRender::~OGLRender()
@@ -114,40 +113,111 @@ bool OGLRender::ClearDeviceObjects()
     return true;
 }
 
-//// paulscode, added for different configurations based on hardware
-// (part of the missing shadows and stars bug fix)
-static int hardwareType = HARDWARE_TYPE_UNKNOWN;
-////
 void OGLRender::Initialize(void)
 {
+    glMatrixMode(GL_MODELVIEW);
+    OPENGL_CHECK_ERRORS;
+    glLoadIdentity();
+    OPENGL_CHECK_ERRORS;
+
     glViewportWrapper(windowSetting.xpos, windowSetting.ypos, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
     OPENGL_CHECK_ERRORS;
 
+#if SDL_VIDEO_OPENGL
     COGLGraphicsContext *pcontext = (COGLGraphicsContext *)(CGraphicsContext::g_pGraphicsContext);
     if( pcontext->IsExtensionSupported("GL_IBM_texture_mirrored_repeat") )
     {
-        //OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT_IBM;
+        OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT_IBM;
     }
     else if( pcontext->IsExtensionSupported("ARB_texture_mirrored_repeat") )
     {
-        //OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT_ARB;
+        OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT_ARB;
     }
     else
     {
-        OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT;
+        OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_REPEAT;
     }
 
-//    if( pcontext->IsExtensionSupported("GL_texture_border_clamp") || pcontext->IsExtensionSupported("GL_EXT_texture_edge_clamp") )
-//    {
+    if( pcontext->IsExtensionSupported("GL_ARB_texture_border_clamp") || pcontext->IsExtensionSupported("GL_EXT_texture_edge_clamp") )
+    {
         m_bSupportClampToEdge = true;
         OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP_TO_EDGE;
-//    }
-//    else
-//    {
-//        m_bSupportClampToEdge = false;
-//        OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP;
-//    }
+    }
+    else
+    {
+        m_bSupportClampToEdge = false;
+        OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP;
+    }
+
+    glVertexPointer( 4, GL_FLOAT, sizeof(float)*5, &(g_vtxProjected5[0][0]) );
+    OPENGL_CHECK_ERRORS;
+    glEnableClientState( GL_VERTEX_ARRAY );
+    OPENGL_CHECK_ERRORS;
+
+    if( m_bMultiTexture )
+    {
+        pglClientActiveTextureARB( GL_TEXTURE0_ARB );
+        OPENGL_CHECK_ERRORS;
+        glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[0].u) );
+        OPENGL_CHECK_ERRORS;
+        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        OPENGL_CHECK_ERRORS;
+
+        pglClientActiveTextureARB( GL_TEXTURE1_ARB );
+        OPENGL_CHECK_ERRORS;
+        glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[1].u) );
+        OPENGL_CHECK_ERRORS;
+        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        OPENGL_CHECK_ERRORS;
+    }
+    else
+    {
+        glTexCoordPointer( 2, GL_FLOAT, sizeof( TLITVERTEX ), &(g_vtxBuffer[0].tcord[0].u) );
+        OPENGL_CHECK_ERRORS;
+        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        OPENGL_CHECK_ERRORS;
+    }
+
+    if (m_bSupportFogCoordExt)
+    {
+        pglFogCoordPointerEXT( GL_FLOAT, sizeof(float)*5, &(g_vtxProjected5[0][4]) );
+        OPENGL_CHECK_ERRORS;
+        glEnableClientState( GL_FOG_COORDINATE_ARRAY_EXT );
+        OPENGL_CHECK_ERRORS;
+        glFogi( GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT );
+        OPENGL_CHECK_ERRORS;
+        glFogi(GL_FOG_MODE, GL_LINEAR); // Fog Mode
+        OPENGL_CHECK_ERRORS;
+        glFogf(GL_FOG_DENSITY, 1.0f); // How Dense Will The Fog Be
+        OPENGL_CHECK_ERRORS;
+        glHint(GL_FOG_HINT, GL_FASTEST); // Fog Hint Value
+        OPENGL_CHECK_ERRORS;
+        glFogi( GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT );
+        OPENGL_CHECK_ERRORS;
+        glFogf( GL_FOG_START, 0.0f );
+        OPENGL_CHECK_ERRORS;
+        glFogf( GL_FOG_END, 1.0f );
+        OPENGL_CHECK_ERRORS;
+    }
+
+    //glColorPointer( 1, GL_UNSIGNED_BYTE, sizeof(TLITVERTEX), &g_vtxBuffer[0].r);
+    glColorPointer( 4, GL_UNSIGNED_BYTE, sizeof(uint8)*4, &(g_oglVtxColors[0][0]) );
+    OPENGL_CHECK_ERRORS;
+    glEnableClientState( GL_COLOR_ARRAY );
+    OPENGL_CHECK_ERRORS;
+
+    if( pcontext->IsExtensionSupported("GL_NV_depth_clamp") )
+    {
+        glEnable(GL_DEPTH_CLAMP_NV);
+        OPENGL_CHECK_ERRORS;
+    }
+
+#elif SDL_VIDEO_OPENGL_ES2
+    OGLXUVFlagMaps[TEXTURE_UV_FLAG_MIRROR].realFlag = GL_MIRRORED_REPEAT;
+    m_bSupportClampToEdge = true;
+    OGLXUVFlagMaps[TEXTURE_UV_FLAG_CLAMP].realFlag = GL_CLAMP_TO_EDGE;
     hardwareType = Android_JNI_GetHardwareType();
+#endif
 }
 //===================================================================
 TextureFilterMap OglTexFilterMap[2]=
@@ -193,11 +263,14 @@ void OGLRender::ApplyTextureFilter()
 
 void OGLRender::SetShadeMode(RenderShadeMode mode)
 {
-//    if( mode == SHADE_SMOOTH )
-//        glShadeModel(GL_SMOOTH);
-//    else
-//        glShadeModel(GL_FLAT);
-//    OPENGL_CHECK_ERRORS;
+#if SDL_VIDEO_OPENGL
+    if( mode == SHADE_SMOOTH )
+        glShadeModel(GL_SMOOTH);
+    else
+        glShadeModel(GL_FLAT);
+    OPENGL_CHECK_ERRORS;
+#endif
+    // TODO: Implement flat shading for GLES2
 }
 
 void OGLRender::ZBufferEnable(BOOL bZBuffer)
@@ -229,7 +302,7 @@ void OGLRender::ClearBuffer(bool cbuffer, bool zbuffer)
     if( cbuffer )   flag |= GL_COLOR_BUFFER_BIT;
     if( zbuffer )   flag |= GL_DEPTH_BUFFER_BIT;
     float depth = ((gRDP.originalFillColor&0xFFFF)>>2)/(float)0x3FFF;
-    glClearDepthf(depth);
+    glClearDepth(depth);
     OPENGL_CHECK_ERRORS;
     glClear(flag);
     OPENGL_CHECK_ERRORS;
@@ -238,7 +311,7 @@ void OGLRender::ClearBuffer(bool cbuffer, bool zbuffer)
 void OGLRender::ClearZBuffer(float depth)
 {
     uint32 flag=GL_DEPTH_BUFFER_BIT;
-    glClearDepthf(depth);
+    glClearDepth(depth);
     OPENGL_CHECK_ERRORS;
     glClear(flag);
     OPENGL_CHECK_ERRORS;
@@ -282,12 +355,12 @@ void OGLRender::SetZUpdate(BOOL bZUpdate)
     }
 }
 
-static float f1, f2;
 void OGLRender::ApplyZBias(int bias)
 {
-//    float f1 = bias > 0 ? -3.0f : 0.0f;  // z offset = -3.0 * max(abs(dz/dx),abs(dz/dy)) per pixel delta z slope
-//    float f2 = bias > 0 ? -3.0f : 0.0f;  // z offset += -3.0 * 1 bit
-    //// paulscode, added for different configurations based on hardware
+    float f1 = bias > 0 ? -3.0f : 0.0f;  // z offset = -3.0 * max(abs(dz/dx),abs(dz/dy)) per pixel delta z slope
+    float f2 = bias > 0 ? -3.0f : 0.0f;  // z offset += -3.0 * 1 bit
+
+    // begin mupen64plus-ae specific hack
     // (part of the missing shadows and stars bug fix)
     if( hardwareType == HARDWARE_TYPE_OMAP )
     {
@@ -319,7 +392,7 @@ void OGLRender::ApplyZBias(int bias)
         f1 = bias > 0 ? -0.2f : 0.0f;
         f2 = bias > 0 ? -0.2f : 0.0f;
     }
-    ////
+    // end mupen64plus-ae specific hack
 
     if (bias > 0)
     {
@@ -362,16 +435,19 @@ void OGLRender::ForceAlphaRef(uint32 dwAlpha)
 
 void OGLRender::SetFillMode(FillMode mode)
 {
-//    if( mode == RICE_FILLMODE_WINFRAME )
-//    {
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-//        OPENGL_CHECK_ERRORS;
-//    }
-//    else
-//    {
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//        OPENGL_CHECK_ERRORS;
-//    }
+#if SDL_VIDEO_OPENGL
+    if( mode == RICE_FILLMODE_WINFRAME )
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        OPENGL_CHECK_ERRORS;
+    }
+    else
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        OPENGL_CHECK_ERRORS;
+    }
+#endif
+    // TODO: Implement wireframe rendering for GLES2
 }
 
 void OGLRender::SetCullMode(bool bCullFront, bool bCullBack)
@@ -662,7 +738,7 @@ bool OGLRender::RenderFillRect(uint32 dwColor, float depth)
 
 bool OGLRender::RenderLine3D()
 {
-/*
+#if SDL_VIDEO_OPENGL
     ApplyZBias(0);  // disable z offsets
 
     glBegin(GL_TRIANGLE_FAN);
@@ -679,7 +755,8 @@ bool OGLRender::RenderLine3D()
     OPENGL_CHECK_ERRORS;
 
     ApplyZBias(m_dwZBias);  // set Z offset back to previous value
-*/
+#endif
+    // TODO: Implement line rendering for GLES2
 
     return true;
 }
@@ -697,8 +774,6 @@ bool OGLRender::RenderFlushTris()
         if( !gRDP.bFogEnableInBlender && gRSP.bFogEnabled )
         {
             TurnFogOnOff(false);
-//            glDisable(GL_FOG);
-//            OPENGL_CHECK_ERRORS;
         }
     }
 
@@ -706,7 +781,6 @@ bool OGLRender::RenderFlushTris()
 
     glViewportWrapper(windowSetting.vpLeftW + windowSetting.xpos, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.ypos, windowSetting.vpWidthW, windowSetting.vpHeightW, false);
     OPENGL_CHECK_ERRORS;
-
 
     //if options.bOGLVertexClipper == FALSE )
     {
@@ -752,7 +826,6 @@ bool OGLRender::RenderFlushTris()
         if( !gRDP.bFogEnableInBlender && gRSP.bFogEnabled )
         {
             TurnFogOnOff(true);
-            OPENGL_CHECK_ERRORS;
         }
     }
     return true;
@@ -964,23 +1037,43 @@ void OGLRender::SetViewportRender()
 void OGLRender::RenderReset()
 {
     CRender::RenderReset();
+
+    glMatrixMode(GL_PROJECTION);
+    OPENGL_CHECK_ERRORS;
+    glLoadIdentity();
+    OPENGL_CHECK_ERRORS;
+    glOrtho(0, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight, 0, -1, 1);
+    OPENGL_CHECK_ERRORS;
+
+    // position viewer 
+    glMatrixMode(GL_MODELVIEW);
+    OPENGL_CHECK_ERRORS;
+    glLoadIdentity();
+    OPENGL_CHECK_ERRORS;
 }
 
 void OGLRender::SetAlphaTestEnable(BOOL bAlphaTestEnable)
 {
-    COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
 #ifdef DEBUGGER
     if( bAlphaTestEnable && debuggerEnableAlphaTest )
 #else
     if( bAlphaTestEnable )
 #endif
+#if SDL_VIDEO_OPENGL
+        glEnable(GL_ALPHA_TEST);
+    else
+        glDisable(GL_ALPHA_TEST);
+#elif SDL_VIDEO_OPENGL_ES2
     {
+        COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
         frag->m_AlphaRef = m_dwAlpha / 255.0f;
     }
     else
     {
+        COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
         frag->m_AlphaRef = 0.0f;
     }
+#endif
     OPENGL_CHECK_ERRORS;
 }
 
@@ -1017,12 +1110,17 @@ void OGLRender::EnableTexUnit(int unitno, BOOL flag)
     if( m_texUnitEnabled[0] != flag )
     {
         m_texUnitEnabled[0] = flag;
+#if SDL_VIDEO_OPENGL
+        if( flag == TRUE )
+            glEnable(GL_TEXTURE_2D);
+        else
+            glDisable(GL_TEXTURE_2D);
+#elif SDL_VIDEO_OPENGL_ES2
         if(flag)
         {
             pglActiveTexture(GL_TEXTURE0_ARB + unitno);
             OPENGL_CHECK_ERRORS;
             glBindTexture(GL_TEXTURE_2D,m_curBoundTex[unitno]);
-            OPENGL_CHECK_ERRORS;
         }
         else
         {
@@ -1030,8 +1128,9 @@ void OGLRender::EnableTexUnit(int unitno, BOOL flag)
             OPENGL_CHECK_ERRORS;
             glEnable(GL_BLEND); //Need blend for transparent disabled texture
             glBindTexture(GL_TEXTURE_2D,disabledTextureID);
-            OPENGL_CHECK_ERRORS;
         }
+#endif
+        OPENGL_CHECK_ERRORS;
     }
 }
 
@@ -1104,21 +1203,29 @@ void OGLRender::ApplyScissorWithClipRatio(bool force)
 
 void OGLRender::SetFogMinMax(float fMin, float fMax)
 {
+#if SDL_VIDEO_OPENGL
+    glFogf(GL_FOG_START, gRSPfFogMin); // Fog Start Depth
+    OPENGL_CHECK_ERRORS;
+    glFogf(GL_FOG_END, gRSPfFogMax); // Fog End Depth
+    OPENGL_CHECK_ERRORS;
+#elif SDL_VIDEO_OPENGL_ES2
     ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
-//    glFogf(GL_FOG_START, gRSPfFogMin); // Fog Start Depth
-//    OPENGL_CHECK_ERRORS;
-//    glFogf(GL_FOG_END, gRSPfFogMax); // Fog End Depth
-//    OPENGL_CHECK_ERRORS;
+    OPENGL_CHECK_ERRORS;
+#endif
 }
 
 void OGLRender::TurnFogOnOff(bool flag)
 {
+#if SDL_VIDEO_OPENGL
+    if( flag )
+        glEnable(GL_FOG);
+    else
+        glDisable(GL_FOG);
+    OPENGL_CHECK_ERRORS;
+#elif SDL_VIDEO_OPENGL_ES2
     ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(flag);
-//    if( flag )
-//        glEnable(GL_FOG);
-//    else
-//        glDisable(GL_FOG);
-//    OPENGL_CHECK_ERRORS;
+    OPENGL_CHECK_ERRORS;
+#endif
 }
 
 void OGLRender::SetFogEnable(bool bEnable)
@@ -1133,25 +1240,28 @@ void OGLRender::SetFogEnable(bool bEnable)
         gRSP.bFogEnabled = true;
     }
 
-    ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
-
+#if SDL_VIDEO_OPENGL
     if( gRSP.bFogEnabled )
     {
         //TRACE2("Enable fog, min=%f, max=%f",gRSPfFogMin,gRSPfFogMax );
-        //glFogfv(GL_FOG_COLOR, gRDP.fvFogColor); // Set Fog Color
-        //OPENGL_CHECK_ERRORS;
-        //glFogf(GL_FOG_START, gRSPfFogMin); // Fog Start Depth
-        //OPENGL_CHECK_ERRORS;
-        //glFogf(GL_FOG_END, gRSPfFogMax); // Fog End Depth
-        //OPENGL_CHECK_ERRORS;
-        //glEnable(GL_FOG);
-        //OPENGL_CHECK_ERRORS;
+        glFogfv(GL_FOG_COLOR, gRDP.fvFogColor); // Set Fog Color
+        OPENGL_CHECK_ERRORS;
+        glFogf(GL_FOG_START, gRSPfFogMin); // Fog Start Depth
+        OPENGL_CHECK_ERRORS;
+        glFogf(GL_FOG_END, gRSPfFogMax); // Fog End Depth
+        OPENGL_CHECK_ERRORS;
+        glEnable(GL_FOG);
+        OPENGL_CHECK_ERRORS;
     }
     else
     {
-        //glDisable(GL_FOG);
-        //OPENGL_CHECK_ERRORS;
+        glDisable(GL_FOG);
+        OPENGL_CHECK_ERRORS;
     }
+#elif SDL_VIDEO_OPENGL_ES2
+    ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
+    OPENGL_CHECK_ERRORS;
+#endif
 }
 
 void OGLRender::SetFogColor(uint32 r, uint32 g, uint32 b, uint32 a)
@@ -1161,7 +1271,9 @@ void OGLRender::SetFogColor(uint32 r, uint32 g, uint32 b, uint32 a)
     gRDP.fvFogColor[1] = g/255.0f;      //g
     gRDP.fvFogColor[2] = b/255.0f;      //b
     gRDP.fvFogColor[3] = a/255.0f;      //a
-    //glFogfv(GL_FOG_COLOR, gRDP.fvFogColor); // Set Fog Color
+#if SDL_VIDEO_OPENGL
+    glFogfv(GL_FOG_COLOR, gRDP.fvFogColor); // Set Fog Color
+#endif
     OPENGL_CHECK_ERRORS;
 }
 
@@ -1180,8 +1292,10 @@ void OGLRender::DisableMultiTexture()
 
 void OGLRender::EndRendering(void)
 {
-    //glFlush();
-    //OPENGL_CHECK_ERRORS;
+#if SDL_VIDEO_OPENGL
+    glFlush();
+    OPENGL_CHECK_ERRORS;
+#endif
     if( CRender::gRenderReferenceCount > 0 ) 
         CRender::gRenderReferenceCount--;
 }
@@ -1199,6 +1313,12 @@ void OGLRender::glViewportWrapper(GLint x, GLint y, GLsizei width, GLsizei heigh
         m_width=width;
         m_height=height;
         mflag=flag;
+        glMatrixMode(GL_PROJECTION);
+        OPENGL_CHECK_ERRORS;
+        glLoadIdentity();
+        OPENGL_CHECK_ERRORS;
+        if( flag )  glOrtho(0, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight, 0, -1, 1);
+        OPENGL_CHECK_ERRORS;
         glViewport(x,y,width,height);
         OPENGL_CHECK_ERRORS;
     }
