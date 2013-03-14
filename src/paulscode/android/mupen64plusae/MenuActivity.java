@@ -107,15 +107,9 @@ public class MenuActivity extends PreferenceActivity implements OnPreferenceClic
         mUserPrefs = new UserPrefs( this );
         mUserPrefs.enforceLocale( this );
         
-        int lastVer = mAppData.getLastAppVersionCode();
-        int currVer = mAppData.appVersionCode;
-        if( lastVer != currVer )
+        if( !OUYAInterface.IS_OUYA_HARDWARE )
         {
-            ChangeLog log = new ChangeLog( getAssets() );
-            if( log.show( this, lastVer + 1, currVer ) )
-            {
-                mAppData.putLastAppVersionCode( currVer );
-            }
+            new Builder( this ).setTitle( "OUYA Hardware Not Detected" ).setMessage( "isRunningOnOUYAHardware returned false!  Do you have the latest system update installed?  Please restart your OUYA and select the option to check for system updates" ).create().show();
         }
         
         // Disable the Xperia PLAY plugin as necessary
