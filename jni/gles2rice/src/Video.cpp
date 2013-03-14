@@ -348,89 +348,53 @@ static bool StartVideo(void)
         }
 
         //// paulscode, screen stretch and aspect ratio
-          bool romPAL, stretchVideo;
-          // determine if this is a PAL or NTSC type ROM
-          switch( g_GraphicsInfo.HEADER[0x3e] )
-          {
-              // PAL codes
-              case 0x44:
-              case 0x46:
-              case 0x49:
-              case 0x50:
-              case 0x53:
-              case 0x55:
-              case 0x58:
-              case 0x59:
-                  romPAL = true;
-                  break;
-              // NTSC codes
-              case 0x37:
-              case 0x41:
-              case 0x45:
-              case 0x4a:
-                  romPAL = false;
-                  break;
-              // Fallback for unknown codes
-              default:
-                  romPAL = false;
-          }
-          // Calculate aspect ratio
-          const float ratio = ( romPAL ? 9.0f/11.0f : 0.75f );
+
+        // Calculate aspect ratio
+        bool stretchVideo = (bool) Android_JNI_GetScreenStretch();
+        int screenPosition = (int) Android_JNI_GetScreenPosition();
+
           int videoWidth = videoInfo->current_w;
           int videoHeight = videoInfo->current_h;
-          int screenPosition;
-          int x, y;
 
-          stretchVideo = (bool) Android_JNI_GetScreenStretch();
-          screenPosition = (int) Android_JNI_GetScreenPosition();
           if( !stretchVideo )
           {
-              videoWidth = (int) ( videoInfo->current_h / ratio );
+              videoWidth = (int) ( videoInfo->current_h / status.fRatio );
               if( videoWidth > videoInfo->current_w )
               {
                   videoWidth = videoInfo->current_w;
-                  videoHeight = (int) ( videoInfo->current_w * ratio );
+                  videoHeight = (int) ( videoInfo->current_w * status.fRatio );
               }
-              
+
               switch( screenPosition )
               {
                   case SCREEN_POSITION_BOTTOM:
-                      x = 0;
-                      y = 0;
+                      windowSetting.xpos = 0;
+                      windowSetting.ypos = 0;
                       break;
-            
+
                   case SCREEN_POSITION_MIDDLE:
-                      x = ( videoInfo->current_w - videoWidth ) / 2;
-                      y = ( videoInfo->current_h - videoHeight ) / 2;
+                      windowSetting.xpos = ( videoInfo->current_w - videoWidth ) / 2;
+                      windowSetting.ypos = ( videoInfo->current_h - videoHeight ) / 2;
                       break;
-            
+
                   case SCREEN_POSITION_TOP:
-                      x = videoInfo->current_w - videoWidth;
-                      y = videoInfo->current_h - videoHeight;
+                      windowSetting.xpos = videoInfo->current_w - videoWidth;
+                      windowSetting.ypos = videoInfo->current_h - videoHeight;
                       break;
               }
           }
           else
           {
-              x = ( videoInfo->current_w - videoWidth ) / 2;
-              y = ( videoInfo->current_h - videoHeight ) / 2;
+              windowSetting.xpos = ( videoInfo->current_w - videoWidth ) / 2;
+              windowSetting.ypos = ( videoInfo->current_h - videoHeight ) / 2;
           }
-          
-          //set xpos and ypos
-          windowSetting.xpos = x;
-          windowSetting.ypos = y;
-    
+
           //set width and height
           windowSetting.uDisplayWidth = videoWidth;
           windowSetting.uDisplayHeight = videoHeight;
-        
-          printf( "Screen dimensions: %i,%i\n", windowSetting.uDisplayWidth, windowSetting.uDisplayHeight );     
-          ConfigSetDefaultInt( l_ConfigVideoGeneral, "ScreenWidth", videoWidth, "Width of output window or fullscreen width" );
-          ConfigSetDefaultInt( l_ConfigVideoGeneral, "ScreenHeight", videoHeight, "Height of output window or fullscreen height" );
 #endif
 
-        bool res = CGraphicsContext::Get()->Initialize( windowSetting.uDisplayWidth, windowSetting.uDisplayHeight,
-                                                        !windowSetting.bDisplayFullscreen );
+        bool res = CGraphicsContext::Get()->Initialize(640, 480, !windowSetting.bDisplayFullscreen);
         if (!res)
         {
             g_CritialSection.Unlock();
