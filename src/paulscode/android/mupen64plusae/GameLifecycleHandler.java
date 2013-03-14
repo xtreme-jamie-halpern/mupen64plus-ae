@@ -40,6 +40,7 @@ import paulscode.android.mupen64plusae.util.OUYAInterface;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -197,6 +198,8 @@ public class GameLifecycleHandler implements View.OnKeyListener
         
         // Refresh the objects and data files interfacing to the emulator core
         CoreInterface.refresh( mActivity, mSurface );
+        
+        new Builder( mActivity ).setTitle( "Helpful Tip" ).setMessage( "Tap system button once for options menu, twice to return to OUYA system menu" ).create().show();
     }
     
     public void onResume()
