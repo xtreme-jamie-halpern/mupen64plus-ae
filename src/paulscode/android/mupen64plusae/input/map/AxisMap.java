@@ -19,6 +19,7 @@ public class AxisMap extends SerializableMap
     public static final int AXIS_CLASS_IGNORED = 1;
     public static final int AXIS_CLASS_STICK = 2;
     public static final int AXIS_CLASS_TRIGGER = 3;
+    public static final int AXIS_CLASS_OUYA_LX_STICK = 101;
     
     private static final int SIGNATURE_HASH_XBOX360 = 449832952;
     private static final int SIGNATURE_HASH_PS3 = -528816963;
@@ -97,6 +98,11 @@ public class AxisMap extends SerializableMap
                 // Bug in controller firmware cross-wires throttle and right stick up/down
                 setClass( MotionEvent.AXIS_THROTTLE, AXIS_CLASS_STICK );
                 break;
+        }
+        // Check if the controller is OUYA, to compensate for the +X axis bias
+        if( device.getName().contains( "OUYA" ) )
+        {
+            setClass( MotionEvent.AXIS_X, AXIS_CLASS_OUYA_LX_STICK );
         }
     }
     
