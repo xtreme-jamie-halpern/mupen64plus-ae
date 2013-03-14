@@ -120,7 +120,7 @@ void OGLRender::Initialize(void)
     glLoadIdentity();
     OPENGL_CHECK_ERRORS;
 
-    glViewportWrapper(windowSetting.xpos, windowSetting.ypos, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
+    glViewportWrapper(0, windowSetting.statusBarHeightToUse, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
     OPENGL_CHECK_ERRORS;
 
 #if SDL_VIDEO_OPENGL
@@ -598,7 +598,7 @@ void OGLRender::SetTextureVFlag(TextureUVFlag dwFlag, uint32 dwTile)
 
 bool OGLRender::RenderTexRect()
 {
-    glViewportWrapper(windowSetting.xpos, windowSetting.ypos, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
+    glViewportWrapper(0, windowSetting.statusBarHeightToUse, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
     OPENGL_CHECK_ERRORS;
 
     GLboolean cullface = glIsEnabled(GL_CULL_FACE);
@@ -681,7 +681,7 @@ bool OGLRender::RenderFillRect(uint32 dwColor, float depth)
     float r = ((dwColor>>16)&0xFF)/255.0f;
     float g = ((dwColor>>8)&0xFF)/255.0f;
     float b = (dwColor&0xFF)/255.0f;
-    glViewportWrapper(windowSetting.xpos, windowSetting.ypos, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
+    glViewportWrapper(0, windowSetting.statusBarHeightToUse, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
     OPENGL_CHECK_ERRORS;
 
     GLboolean cullface = glIsEnabled(GL_CULL_FACE);
@@ -779,7 +779,7 @@ bool OGLRender::RenderFlushTris()
 
     ApplyZBias(m_dwZBias);  // set the bias factors
 
-    glViewportWrapper(windowSetting.vpLeftW + windowSetting.xpos, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.ypos, windowSetting.vpWidthW, windowSetting.vpHeightW, false);
+    glViewportWrapper(windowSetting.vpLeftW, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.statusBarHeightToUse, windowSetting.vpWidthW, windowSetting.vpHeightW, false);
     OPENGL_CHECK_ERRORS;
 
     //if options.bOGLVertexClipper == FALSE )
@@ -846,7 +846,7 @@ void OGLRender::DrawSimple2DTexture(float x0, float y0, float x1, float y1, floa
     glDisable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
 
-    glViewportWrapper(windowSetting.xpos, windowSetting.ypos, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
+    glViewportWrapper(0, windowSetting.statusBarHeightToUse, windowSetting.uDisplayWidth, windowSetting.uDisplayHeight);
     OPENGL_CHECK_ERRORS;
 
     float a = (g_texRectTVtx[0].dcDiffuse >>24)/255.0f;
@@ -1030,7 +1030,7 @@ COLOR OGLRender::PostProcessSpecularColor()
 
 void OGLRender::SetViewportRender()
 {
-    glViewportWrapper(windowSetting.vpLeftW + windowSetting.xpos, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.ypos, windowSetting.vpWidthW, windowSetting.vpHeightW);
+    glViewportWrapper(windowSetting.vpLeftW, windowSetting.uDisplayHeight-windowSetting.vpTopW-windowSetting.vpHeightW+windowSetting.statusBarHeightToUse, windowSetting.vpWidthW, windowSetting.vpHeightW);
     OPENGL_CHECK_ERRORS;
 }
 
@@ -1153,7 +1153,7 @@ void OGLRender::UpdateScissor()
         uint32 height = (gRDP.scissor.right*gRDP.scissor.bottom)/width;
         glEnable(GL_SCISSOR_TEST);
         OPENGL_CHECK_ERRORS;
-        glScissor(windowSetting.xpos, int(height*windowSetting.fMultY+windowSetting.ypos),
+        glScissor(0, int(height*windowSetting.fMultY+windowSetting.statusBarHeightToUse),
             int(width*windowSetting.fMultX), int(height*windowSetting.fMultY) );
         OPENGL_CHECK_ERRORS;
     }
@@ -1174,7 +1174,7 @@ void OGLRender::ApplyRDPScissor(bool force)
         uint32 height = (gRDP.scissor.right*gRDP.scissor.bottom)/width;
         glEnable(GL_SCISSOR_TEST);
         OPENGL_CHECK_ERRORS;
-        glScissor(windowSetting.xpos, int(height*windowSetting.fMultY+windowSetting.ypos),
+        glScissor(0, int(height*windowSetting.fMultY+windowSetting.statusBarHeightToUse),
             int(width*windowSetting.fMultX), int(height*windowSetting.fMultY) );
         OPENGL_CHECK_ERRORS;
     }
@@ -1302,6 +1302,11 @@ void OGLRender::EndRendering(void)
 
 void OGLRender::glViewportWrapper(GLint x, GLint y, GLsizei width, GLsizei height, bool flag)
 {
+    // begin mupen64plus-ae specific feature
+    x += windowSetting.xpos;
+    y += windowSetting.ypos - windowSetting.statusBarHeightToUse;
+    // end mupen64plus-ae specific feature
+
     static GLint mx=0,my=0;
     static GLsizei m_width=0, m_height=0;
     static bool mflag=true;
