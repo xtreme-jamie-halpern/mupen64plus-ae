@@ -155,6 +155,8 @@ public class InputMapActivity extends Activity implements OnInputListener, OnCli
         
         // Refresh everything
         refreshAllButtons();
+        
+        new Builder( this ).setTitle( "Buttons Already Mapped" ).setMessage( "The buttons are already optimized for OUYA controllers. This section is only needed if you want to map a 3rd-party joystick" ).create().show();
     }
     
     private void initLayoutOuya()
