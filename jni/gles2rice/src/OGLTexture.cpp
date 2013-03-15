@@ -119,9 +119,9 @@ void COGLTexture::EndUpdate(DrawInfo *di)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
         OPENGL_CHECK_ERRORS;
 
-        // Tell to hardware to generate mipmap (himself) when glTexImage2D is called
 #if SDL_VIDEO_OPENGL
-        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+        // Tell to hardware to generate mipmap (himself) when glTexImage2D is called
+        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); 
 #elif SDL_VIDEO_OPENGL_ES2
         glGenerateMipmap(GL_TEXTURE_2D);
 #endif

@@ -28,17 +28,22 @@
 #include <SDL_opengl.h>
 #define GLSL_VERSION "120"
 
+// TODO: Tentative substitutions (need to examine in more detail)
+#define OSAL_GL_ARB_TEXTURE_ENV_ADD         "GL_ARB_texture_env_add"
 
 
 #elif SDL_VIDEO_OPENGL_ES2
 #include <SDL_opengles2.h>
 #define GLSL_VERSION "100"
 
+// TODO: Tentative substitutions (need to examine in more detail)
+#define OSAL_GL_ARB_TEXTURE_ENV_ADD         "GL_texture_env_add"
+
 // Vertex shader params
-#define VS_POSITION     0
-#define VS_COLOR        1
-#define VS_TEXCOORD0    2
-#define VS_TEXCOORD1    3
+#define VS_POSITION                         0
+#define VS_COLOR                            1
+#define VS_TEXCOORD0                        2
+#define VS_TEXCOORD1                        3
 
 // Constant substitutions
 //#define GL_ADD_SIGNED_ARB                   GL_ADD_SIGNED
