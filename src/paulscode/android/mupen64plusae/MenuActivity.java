@@ -111,7 +111,6 @@ public class MenuActivity extends PreferenceActivity implements OnPreferenceClic
         {
             new Builder( this ).setTitle( "OUYA Hardware Not Detected" ).setMessage( "isRunningOnOUYAHardware returned false!  Do you have the latest system update installed?  Please restart your OUYA and select the option to check for system updates" ).create().show();
         }
-        PrefUtil.removePreference( this, "screenAdvanced", "categoryDiagnostics" );
         
         // Disable the Xperia PLAY plugin as necessary
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences( this );
@@ -170,7 +169,9 @@ public class MenuActivity extends PreferenceActivity implements OnPreferenceClic
         
         if( mUserPrefs.isOuyaMode )
             PrefUtil.removePreference( this, CATEGORY_SINGLE_PLAYER, SCREEN_TOUCHSCREEN );
-    }
+        
+        PrefUtil.removePreference( this, "screenAdvanced", "categoryDiagnostics" );
+   }
     
     @Override
     protected void onPause()

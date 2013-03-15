@@ -22,11 +22,13 @@ package paulscode.android.mupen64plusae.input.provider;
 
 import paulscode.android.mupen64plusae.input.map.InputMap;
 import paulscode.android.mupen64plusae.persistent.AppData;
+import paulscode.android.mupen64plusae.util.OUYAInterface;
 import paulscode.android.mupen64plusae.util.SubscriptionManager;
 import android.annotation.TargetApi;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import tv.ouya.console.api.OuyaController;
 
 /**
  * The base class for transforming arbitrary input data into a common format.
@@ -182,7 +184,68 @@ public abstract class AbstractProvider
         if( inputCode > 0 )
         {
             if( AppData.IS_HONEYCOMB_MR1 )
-                return KeyEvent.keyCodeToString( inputCode );
+            {
+                String name = null;
+                if( OUYAInterface.IS_OUYA_HARDWARE )
+                {
+                    switch( inputCode )
+                    {
+                        case OuyaController.BUTTON_O:
+                            name = "OUYA BUTTON_O";
+                            break;
+                        case OuyaController.BUTTON_U:
+                            name = "OUYA BUTTON_U";
+                            break;
+                        case OuyaController.BUTTON_Y:
+                            name = "OUYA BUTTON_Y";
+                            break;
+                        case OuyaController.BUTTON_A:
+                            name = "OUYA BUTTON_A";
+                            break;
+                        case OuyaController.BUTTON_L1:
+                            name = "OUYA BUTTON_L1";
+                            break;
+                        case OuyaController.BUTTON_L2:
+                            name = "OUYA BUTTON_L2";
+                            break;
+                        case OuyaController.BUTTON_L3:
+                            name = "OUYA BUTTON_L3";
+                            break;
+                        case OuyaController.BUTTON_R1:
+                            name = "OUYA BUTTON_R1";
+                            break;
+                        case OuyaController.BUTTON_R2:
+                            name = "OUYA BUTTON_R2";
+                            break;
+                        case OuyaController.BUTTON_R3:
+                            name = "OUYA BUTTON_R3";
+                            break;
+                        case OuyaController.BUTTON_DPAD_DOWN:
+                            name = "OUYA BUTTON_DPAD_DOWN";
+                            break;
+                        case OuyaController.BUTTON_DPAD_LEFT:
+                            name = "OUYA BUTTON_DPAD_LEFT";
+                            break;
+                        case OuyaController.BUTTON_DPAD_RIGHT:
+                            name = "OUYA BUTTON_DPAD_RIGHT";
+                            break;
+                        case OuyaController.BUTTON_DPAD_UP:
+                            name = "OUYA BUTTON_DPAD_UP";
+                            break;
+                        case OuyaController.BUTTON_MENU:
+                            name = "OUYA BUTTON_MENU";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if( name == null )
+                    name = KeyEvent.keyCodeToString( inputCode );
+                else
+                    name += " (" + KeyEvent.keyCodeToString( inputCode ) + ")";
+                
+                return name;
+            }
             else
                 return "KEYCODE_" + inputCode;
         }
@@ -191,7 +254,41 @@ public abstract class AbstractProvider
             int axis = inputToAxisCode( inputCode );
             String direction = inputToAxisDirection( inputCode ) ? " (+)" : " (-)";
             if( AppData.IS_HONEYCOMB_MR1 )
-                return MotionEvent.axisToString( axis ) + direction;
+            {
+                String name = null;
+                if( OUYAInterface.IS_OUYA_HARDWARE )
+                {
+                    switch( axis )
+                    {
+                        case OuyaController.AXIS_L2:
+                            name = "OUYA AXIS_L2";
+                            break;
+                        case OuyaController.AXIS_R2:
+                            name = "OUYA AXIS_R2";
+                            break;
+                        case OuyaController.AXIS_LS_X:
+                            name = "OUYA AXIS_LS_X";
+                            break;
+                        case OuyaController.AXIS_LS_Y:
+                            name = "OUYA AXIS_LS_Y";
+                            break;
+                        case OuyaController.AXIS_RS_X:
+                            name = "OUYA AXIS_RS_X";
+                            break;
+                        case OuyaController.AXIS_RS_Y:
+                            name = "OUYA AXIS_RS_Y";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if( name == null )
+                    name = MotionEvent.axisToString( axis ) + direction;
+                else
+                    name += " (" + MotionEvent.axisToString( axis ) + ")" + direction;
+                
+                return name;
+            }
             else
                 return "AXIS_" + axis + direction;
         }
