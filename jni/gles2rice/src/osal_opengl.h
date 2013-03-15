@@ -29,6 +29,7 @@
 #define GLSL_VERSION "120"
 
 // TODO: Tentative substitutions (need to examine in more detail)
+#define OSAL_GL_ARB_MULTITEXTURE            "GL_ARB_multitexture"
 #define OSAL_GL_ARB_TEXTURE_ENV_ADD         "GL_ARB_texture_env_add"
 
 
@@ -37,6 +38,7 @@
 #define GLSL_VERSION "100"
 
 // TODO: Tentative substitutions (need to examine in more detail)
+#define OSAL_GL_ARB_MULTITEXTURE            "GL_multitexture"
 #define OSAL_GL_ARB_TEXTURE_ENV_ADD         "GL_texture_env_add"
 
 // Vertex shader params
