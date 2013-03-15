@@ -171,6 +171,7 @@ public class MenuActivity extends PreferenceActivity implements OnPreferenceClic
             PrefUtil.removePreference( this, CATEGORY_SINGLE_PLAYER, SCREEN_TOUCHSCREEN );
         
         PrefUtil.removePreference( this, "screenAdvanced", "categoryDiagnostics" );
+        PrefUtil.removePreference( this, "screenAdvanced", "navigationMode" );
    }
     
     @Override
