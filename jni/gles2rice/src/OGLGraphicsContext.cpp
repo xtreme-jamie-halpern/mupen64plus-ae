@@ -50,8 +50,6 @@ extern "C" int Android_JNI_UseRGBA8888();
 #include "Video.h"
 #include "version.h"
 
-//#include "liblinux/BMGLibPNG.h"
-
 COGLGraphicsContext::COGLGraphicsContext() :
     m_bSupportMultiTexture(false),
     m_bSupportTextureEnvCombine(false),
@@ -103,11 +101,11 @@ bool COGLGraphicsContext::Initialize(uint32 dwWidth, uint32 dwHeight, BOOL bWind
     int bVerticalSync = windowSetting.bVerticalSync;
     if( options.colorQuality == TEXTURE_FMT_A4R4G4B4 ) colorBufferDepth = 16;
 
-/*    // init sdl & gl
+    // init sdl & gl
     DebugMessage(M64MSG_VERBOSE, "Initializing video subsystem...");
     if (CoreVideo_Init() != M64ERR_SUCCESS)   
         return false;
-*/
+
     /* hard-coded attribute values */
     const int iDOUBLEBUFFER = 1;
 
@@ -223,15 +221,17 @@ void COGLGraphicsContext::InitState(void)
     glClearDepth(1.0f);
     OPENGL_CHECK_ERRORS;
 
-    //glShadeModel(GL_SMOOTH);
+#if SDL_VIDEO_OPENGL
+    glShadeModel(GL_SMOOTH);
     OPENGL_CHECK_ERRORS;
 
     //position viewer 
     //glMatrixMode(GL_MODELVIEW);
     //glLoadIdentity();
 
-    //glDisable(GL_ALPHA_TEST);
+    glDisable(GL_ALPHA_TEST);
     OPENGL_CHECK_ERRORS;
+#endif
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     OPENGL_CHECK_ERRORS;
@@ -242,20 +242,25 @@ void COGLGraphicsContext::InitState(void)
     OPENGL_CHECK_ERRORS;
     glDisable(GL_CULL_FACE);
     OPENGL_CHECK_ERRORS;
-    //glDisable(GL_NORMALIZE);
+#if SDL_VIDEO_OPENGL
+    glDisable(GL_NORMALIZE);
     OPENGL_CHECK_ERRORS;
+#endif
 
     glDepthFunc(GL_LEQUAL);
     OPENGL_CHECK_ERRORS;
     glEnable(GL_DEPTH_TEST);
     OPENGL_CHECK_ERRORS;
 
-    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+#if SDL_VIDEO_OPENGL
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     OPENGL_CHECK_ERRORS;
+#endif
 
     glEnable(GL_BLEND);
     OPENGL_CHECK_ERRORS;
-    //glEnable(GL_ALPHA_TEST);
+#if SDL_VIDEO_OPENGL
+    glEnable(GL_ALPHA_TEST);
     OPENGL_CHECK_ERRORS;
 
     glMatrixMode(GL_PROJECTION);
@@ -263,7 +268,6 @@ void COGLGraphicsContext::InitState(void)
     glLoadIdentity();
     OPENGL_CHECK_ERRORS;
     
-#if SDL_VIDEO_OPENGL
     glDepthRange(-1, 1);
 #elif SDL_VIDEO_OPENGL_ES2
     glDepthRangef(0.0f, 1.0f);  // TODO: Why the difference here?
@@ -297,8 +301,7 @@ void COGLGraphicsContext::InitOGLExtension(void)
         || options.anisotropicFiltering == 16))
     {
         //Get the max value of aniso that the graphic card support
-        //glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_maxAnisotropicFiltering);
-        m_maxAnisotropicFiltering = 0;
+        glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_maxAnisotropicFiltering);
         OPENGL_CHECK_ERRORS;
 
         // If user want more aniso than hardware can do
@@ -325,7 +328,6 @@ void COGLGraphicsContext::InitOGLExtension(void)
 
 bool COGLGraphicsContext::IsExtensionSupported(const char* pExtName)
 {
-    return false;
     if (strstr((const char*)m_pExtensionStr, pExtName) != NULL)
     {
         DebugMessage(M64MSG_VERBOSE, "OpenGL Extension '%s' is supported.", pExtName);
@@ -379,7 +381,7 @@ void COGLGraphicsContext::UpdateFrame(bool swaponly)
 {
     status.gFrameCount++;
 
-    //glFlush();
+    glFlush();
     OPENGL_CHECK_ERRORS;
     //glFinish();
     //wglSwapIntervalEXT(0);
@@ -455,11 +457,11 @@ void COGLGraphicsContext::UpdateFrame(bool swaponly)
 
     glDepthMask(GL_TRUE);
     OPENGL_CHECK_ERRORS;
-    glClearDepthf(1.0f);
+    glClearDepth(1.0);
     OPENGL_CHECK_ERRORS;
     if( !g_curRomInfo.bForceScreenClear ) 
     {
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
         OPENGL_CHECK_ERRORS;
     }
     else
