@@ -267,6 +267,7 @@ public class InputMapActivity extends Activity implements OnInputListener, OnCli
         menu.findItem( R.id.menuItem_exit ).setVisible( !mUserPrefs.isOuyaMode );
         menu.findItem( R.id.menuItem_axisInfo ).setVisible( AppData.IS_HONEYCOMB_MR1 );
         
+        menu.removeItem( R.id.menuItem_controllerDiagnostics );
         return super.onCreateOptionsMenu( menu );
     }
     
