@@ -95,6 +95,7 @@ bool COGLColorCombiner4::Initialize(void)
         m_supportedStages = m_maxTexUnits;
         return true;
     }
+
     return false;
 #elif SDL_VIDEO_OPENGL_ES2
     return true;
