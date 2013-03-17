@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #if SDL_VIDEO_OPENGL
 #include "OGLExtensions.h"
 #elif SDL_VIDEO_OPENGL_ES2
-#include "OGLFragmentShaders.h"
+#include "OGLES2FragmentShaders.h"
 #endif
 
 #include "OGLDebug.h"
@@ -1065,12 +1065,12 @@ void OGLRender::SetAlphaTestEnable(BOOL bAlphaTestEnable)
         glDisable(GL_ALPHA_TEST);
 #elif SDL_VIDEO_OPENGL_ES2
     {
-        COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
+        COGLES2_FragmentProgramCombiner* frag = (COGLES2_FragmentProgramCombiner*)m_pColorCombiner;
         frag->m_AlphaRef = m_dwAlpha / 255.0f;
     }
     else
     {
-        COGL_FragmentProgramCombiner* frag = (COGL_FragmentProgramCombiner*)m_pColorCombiner;
+        COGLES2_FragmentProgramCombiner* frag = (COGLES2_FragmentProgramCombiner*)m_pColorCombiner;
         frag->m_AlphaRef = 0.0f;
     }
 #endif
@@ -1209,7 +1209,7 @@ void OGLRender::SetFogMinMax(float fMin, float fMax)
     glFogf(GL_FOG_END, gRSPfFogMax); // Fog End Depth
     OPENGL_CHECK_ERRORS;
 #elif SDL_VIDEO_OPENGL_ES2
-    ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
+    ((COGLES2_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
     OPENGL_CHECK_ERRORS;
 #endif
 }
@@ -1223,7 +1223,7 @@ void OGLRender::TurnFogOnOff(bool flag)
         glDisable(GL_FOG);
     OPENGL_CHECK_ERRORS;
 #elif SDL_VIDEO_OPENGL_ES2
-    ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(flag);
+    ((COGLES2_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(flag);
     OPENGL_CHECK_ERRORS;
 #endif
 }
@@ -1259,7 +1259,7 @@ void OGLRender::SetFogEnable(bool bEnable)
         OPENGL_CHECK_ERRORS;
     }
 #elif SDL_VIDEO_OPENGL_ES2
-    ((COGL_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
+    ((COGLES2_FragmentProgramCombiner*)m_pColorCombiner)->UpdateFog(gRSP.bFogEnabled);
     OPENGL_CHECK_ERRORS;
 #endif
 }

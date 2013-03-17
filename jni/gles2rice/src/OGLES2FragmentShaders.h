@@ -45,10 +45,10 @@ typedef struct {
     GLint FogColorLocation;
     GLint FogMinMaxLocation;
 
-} OGLShaderCombinerSaveType;
+} OGLES2ShaderCombinerSaveType;
 
 
-class COGL_FragmentProgramCombiner : public COGLColorCombiner4
+class COGLES2_FragmentProgramCombiner : public COGLColorCombiner4
 {
 public:
     bool Initialize(void);
@@ -63,11 +63,11 @@ protected:
     void InitCombinerCycleFill(void);
     void InitCombinerCycle12(void);
 
-    COGL_FragmentProgramCombiner(CRender *pRender);
-    ~COGL_FragmentProgramCombiner();
+    COGLES2_FragmentProgramCombiner(CRender *pRender);
+    ~COGLES2_FragmentProgramCombiner();
 
     bool m_bFragmentProgramIsSupported;
-    std::vector<OGLShaderCombinerSaveType>      m_vCompiledShaders;
+    std::vector<OGLES2ShaderCombinerSaveType>      m_vCompiledShaders;
 
 private:
     virtual int ParseDecodedMux();
@@ -84,7 +84,7 @@ private:
 
 
 
-class COGLFragmentShaderCombiner : public COGLColorCombiner
+class COGLES2FragmentShaderCombiner : public COGLColorCombiner
 {
 public:
     bool Initialize(void);
@@ -97,8 +97,8 @@ protected:
     void InitCombinerCycleFill(void);
     void InitCombinerCycle12(void);
 
-    COGLFragmentShaderCombiner(CRender *pRender);
-    ~COGLFragmentShaderCombiner();
+    COGLES2FragmentShaderCombiner(CRender *pRender);
+    ~COGLES2FragmentShaderCombiner();
 
     bool m_bShaderIsSupported;
 

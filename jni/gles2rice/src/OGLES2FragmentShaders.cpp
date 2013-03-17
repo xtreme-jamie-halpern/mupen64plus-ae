@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #include "OGLDebug.h"
-#include "OGLFragmentShaders.h"
+#include "OGLES2FragmentShaders.h"
 #include "OGLRender.h"
 #include "OGLGraphicsContext.h"
 
@@ -142,16 +142,16 @@ const char *fragmentFill =
 
 GLuint fillProgram,fillColorLocation;
 
-COGLFragmentShaderCombiner::COGLFragmentShaderCombiner(CRender *pRender)
+COGLES2FragmentShaderCombiner::COGLES2FragmentShaderCombiner(CRender *pRender)
 : COGLColorCombiner(pRender)
 {
     m_bShaderIsSupported = true;
 }
-COGLFragmentShaderCombiner::~COGLFragmentShaderCombiner()
+COGLES2FragmentShaderCombiner::~COGLES2FragmentShaderCombiner()
 {
 }
 
-bool COGLFragmentShaderCombiner::Initialize(void)
+bool COGLES2FragmentShaderCombiner::Initialize(void)
 {
     if( !COGLColorCombiner::Initialize() )
         return false;
@@ -165,30 +165,30 @@ bool COGLFragmentShaderCombiner::Initialize(void)
     return true;
 }
 
-void COGLFragmentShaderCombiner::InitCombinerCycle12(void)
+void COGLES2FragmentShaderCombiner::InitCombinerCycle12(void)
 {
 }
-void COGLFragmentShaderCombiner::DisableCombiner(void)
+void COGLES2FragmentShaderCombiner::DisableCombiner(void)
 {
     COGLColorCombiner::DisableCombiner();
 }
 
-void COGLFragmentShaderCombiner::InitCombinerCycleCopy(void)
+void COGLES2FragmentShaderCombiner::InitCombinerCycleCopy(void)
 {
     COGLColorCombiner::InitCombinerCycleCopy();
 }
 
-void COGLFragmentShaderCombiner::InitCombinerCycleFill(void)
+void COGLES2FragmentShaderCombiner::InitCombinerCycleFill(void)
 {
     COGLColorCombiner::InitCombinerCycleFill();
 }
-void COGLFragmentShaderCombiner::InitCombinerBlenderForSimpleTextureDraw(uint32 tile)
+void COGLES2FragmentShaderCombiner::InitCombinerBlenderForSimpleTextureDraw(uint32 tile)
 {
     COGLColorCombiner::InitCombinerBlenderForSimpleTextureDraw(tile);
 }
 
 #ifdef DEBUGGER
-void COGLFragmentShaderCombiner::DisplaySimpleMuxString(void)
+void COGLES2FragmentShaderCombiner::DisplaySimpleMuxString(void)
 {
     COGLColorCombiner::DisplaySimpleMuxString();
 }
@@ -196,7 +196,7 @@ void COGLFragmentShaderCombiner::DisplaySimpleMuxString(void)
 
 
 
-COGL_FragmentProgramCombiner::COGL_FragmentProgramCombiner(CRender *pRender)
+COGLES2_FragmentProgramCombiner::COGLES2_FragmentProgramCombiner(CRender *pRender)
 : COGLColorCombiner4(pRender)
 {
     delete m_pDecodedMux;
@@ -280,7 +280,7 @@ COGL_FragmentProgramCombiner::COGL_FragmentProgramCombiner(CRender *pRender)
     glDeleteShader(fs);
     glDeleteShader(vs);
 }
-COGL_FragmentProgramCombiner::~COGL_FragmentProgramCombiner()
+COGLES2_FragmentProgramCombiner::~COGLES2_FragmentProgramCombiner()
 {
     int size = m_vCompiledShaders.size();
     for (int i=0; i<size; i++)
@@ -295,7 +295,7 @@ COGL_FragmentProgramCombiner::~COGL_FragmentProgramCombiner()
     m_vCompiledShaders.clear();
 }
 
-bool COGL_FragmentProgramCombiner::Initialize(void)
+bool COGLES2_FragmentProgramCombiner::Initialize(void)
 {
     if( !COGLColorCombiner4::Initialize() )
         return false;
@@ -311,14 +311,14 @@ bool COGL_FragmentProgramCombiner::Initialize(void)
 
 
 
-void COGL_FragmentProgramCombiner::DisableCombiner(void)
+void COGLES2_FragmentProgramCombiner::DisableCombiner(void)
 {
     //glDisable(GL_FRAGMENT_PROGRAM);
     //OPENGL_CHECK_ERRORS;
     COGLColorCombiner4::DisableCombiner();
 }
 
-void COGL_FragmentProgramCombiner::InitCombinerCycleCopy(void)
+void COGLES2_FragmentProgramCombiner::InitCombinerCycleCopy(void)
 {
     m_pOGLRender->DisableMultiTexture();
     m_pOGLRender->EnableTexUnit(0,TRUE);
@@ -341,7 +341,7 @@ void COGL_FragmentProgramCombiner::InitCombinerCycleCopy(void)
     }
 }
 
-void COGL_FragmentProgramCombiner::InitCombinerCycleFill(void)
+void COGLES2_FragmentProgramCombiner::InitCombinerCycleFill(void)
 {
     glUseProgram(fillProgram);
     glUniform4f(fillColorLocation,((gRDP.fillColor>>16)&0xFF)/255.0f,((gRDP.fillColor>>8)&0xFF)/255.0f,((gRDP.fillColor)&0xFF)/255.0f,((gRDP.fillColor>>24)&0xFF)/255.0f);
@@ -421,7 +421,7 @@ static void CheckFpVars(uint8 MuxVar, bool &bNeedT0, bool &bNeedT1)
         bNeedT1 = true;
 }
 
-void COGL_FragmentProgramCombiner::GenerateProgramStr()
+void COGLES2_FragmentProgramCombiner::GenerateProgramStr()
 {
     DecodedMuxForPixelShader &mux = *(DecodedMuxForPixelShader*)m_pDecodedMux;
 
@@ -504,12 +504,12 @@ void COGL_FragmentProgramCombiner::GenerateProgramStr()
 
 }
 
-int COGL_FragmentProgramCombiner::ParseDecodedMux()
+int COGLES2_FragmentProgramCombiner::ParseDecodedMux()
 {
     if( !m_bFragmentProgramIsSupported )
         return COGLColorCombiner4::ParseDecodedMux();
 
-    OGLShaderCombinerSaveType res;
+    OGLES2ShaderCombinerSaveType res;
     GLint success;
 
     if(vertexProgram == 9999)
@@ -627,7 +627,7 @@ int COGL_FragmentProgramCombiner::ParseDecodedMux()
     return m_lastIndex;
 }
 
-void COGL_FragmentProgramCombiner::GenerateCombinerSetting(int index)
+void COGLES2_FragmentProgramCombiner::GenerateCombinerSetting(int index)
 {
     GLuint ID = m_vCompiledShaders[index].programID;
 
@@ -653,9 +653,9 @@ void COGL_FragmentProgramCombiner::GenerateCombinerSetting(int index)
     OPENGL_CHECK_ERRORS;
 }
 
-void COGL_FragmentProgramCombiner::GenerateCombinerSettingConstants(int index)
+void COGLES2_FragmentProgramCombiner::GenerateCombinerSettingConstants(int index)
 {
-    OGLShaderCombinerSaveType prog = m_vCompiledShaders[index];
+    OGLES2ShaderCombinerSaveType prog = m_vCompiledShaders[index];
 
     glUseProgram(prog.programID);
     float *pf;
@@ -702,11 +702,11 @@ void COGL_FragmentProgramCombiner::GenerateCombinerSettingConstants(int index)
     OPENGL_CHECK_ERRORS;
 }
 
-void COGL_FragmentProgramCombiner::UpdateFog(bool bEnable)
+void COGLES2_FragmentProgramCombiner::UpdateFog(bool bEnable)
 {
     if(m_lastIndex < 0 || m_lastIndex >= m_vCompiledShaders.size())
         return;
-    OGLShaderCombinerSaveType prog = m_vCompiledShaders[m_lastIndex];
+    OGLES2ShaderCombinerSaveType prog = m_vCompiledShaders[m_lastIndex];
 
     //if(bEnable)
     //    DebugMessage(M64MSG_INFO,"Fog Color %x Min %f Max %f",gRDP.fogColor,gRSPfFogMin,gRSPfFogMax);
@@ -723,7 +723,7 @@ void COGL_FragmentProgramCombiner::UpdateFog(bool bEnable)
     }
 }
 
-int COGL_FragmentProgramCombiner::FindCompiledMux()
+int COGLES2_FragmentProgramCombiner::FindCompiledMux()
 {
 #ifdef DEBUGGER
     if( debuggerDropCombiners )
@@ -748,7 +748,7 @@ int COGL_FragmentProgramCombiner::FindCompiledMux()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void COGL_FragmentProgramCombiner::InitCombinerCycle12(void)
+void COGLES2_FragmentProgramCombiner::InitCombinerCycle12(void)
 {
     if( !m_bFragmentProgramIsSupported )    
     {
@@ -809,7 +809,7 @@ void COGL_FragmentProgramCombiner::InitCombinerCycle12(void)
 }
 
 #ifdef DEBUGGER
-void COGL_FragmentProgramCombiner::DisplaySimpleMuxString(void)
+void COGLES2_FragmentProgramCombiner::DisplaySimpleMuxString(void)
 {
     COGLColorCombiner::DisplaySimpleMuxString();
     DecodedMuxForPixelShader &mux = *(DecodedMuxForPixelShader*)m_pDecodedMux;

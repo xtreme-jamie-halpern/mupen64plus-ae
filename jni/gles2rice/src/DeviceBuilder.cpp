@@ -17,11 +17,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+#include "osal_opengl.h"
+
 #include "DeviceBuilder.h"
 #include "FrameBuffer.h"
 #include "OGLCombiner.h"
 #include "OGLDebug.h"
-#include "OGLFragmentShaders.h"
 #include "OGLExtRender.h"
 #include "OGLGraphicsContext.h"
 #include "OGLTexture.h"
@@ -29,6 +30,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "OGLCombinerNV.h"
 #include "OGLCombinerTNT2.h"
 #include "OGLExtensions.h"
+#include "OGLFragmentShaders.h"
+#elif SDL_VIDEO_OPENGL_ES2
+#include "OGLES2FragmentShaders.h"
 #endif
 
 //========================================================================
@@ -346,8 +350,8 @@ CColorCombiner * OGLDeviceBuilder::CreateColorCombiner(CRender *pRender)
 
 #elif SDL_VIDEO_OPENGL_ES2
 
-            m_pColorCombiner = new COGL_FragmentProgramCombiner(pRender);
-            DebugMessage(M64MSG_INFO, "OpenGL Combiner: Fragment Program");
+            m_pColorCombiner = new COGLES2_FragmentProgramCombiner(pRender);
+            DebugMessage(M64MSG_INFO, "OpenGLES2 Combiner: Fragment Program");
 
 #endif
         }
